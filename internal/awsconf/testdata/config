@@ -1,0 +1,22 @@
+[default]
+region = eu-west-1
+
+[profile legacy]
+sso_start_url = https://example.awsapps.com/start
+sso_region = eu-west-1
+sso_account_id = acct-legacy
+sso_role_name = Admin
+region = eu-west-1
+
+[profile modern]
+sso_session = corp
+sso_account_id = acct-modern
+sso_role_name = ReadOnly
+region = us-east-1
+
+[profile static]
+aws_access_key_id = x
+
+[sso-session corp]
+sso_start_url = https://corp.awsapps.com/start
+sso_region = us-east-1
