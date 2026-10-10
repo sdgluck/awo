@@ -159,27 +159,19 @@ func profiles() ([]awsconf.Profile, error) {
 	return ps, nil
 }
 
-// popup sizes the popup to the profile list: one row per profile plus the
-// header/filter/footer, plus the border.
+// popup sizes the popup to fit the picker (see ui.Model.Size) plus the border.
 func popup(win, client string) error {
 	ps, err := profiles()
 	if err != nil {
 		return err
 	}
-	nameW, roleW, regW := 0, 0, 0
-	for _, p := range ps {
-		nameW = max(nameW, len(p.Name))
-		roleW = max(roleW, len(p.Role))
-		regW = max(regW, len(p.Region))
-	}
-	w := max(2+nameW+1+12+1+roleW+1+regW+1, 46) + 2
-	h := min(len(ps), 20) + 3 + 2
+	w, h := ui.New(win, ps).Size()
 	self, err := os.Executable()
 	if err != nil {
 		return err
 	}
 	cmd := shellQuote(self) + " pick --window " + shellQuote(win)
-	return tmux.Popup(client, min(w, 120), h, " aws ", cmd)
+	return tmux.Popup(client, min(w+2, 120), h+2, " awo ", cmd)
 }
 
 func shellQuote(s string) string {
