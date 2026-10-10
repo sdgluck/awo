@@ -22,11 +22,14 @@ import (
 var (
 	// 245 rather than 8: bright black is the background colour in some
 	// themes (e.g. Solarized Dark).
-	dim    = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	plain  = lipgloss.NewStyle()
-	bold   = lipgloss.NewStyle().Bold(true)
-	green  = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	dim   = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+	plain = lipgloss.NewStyle()
+	bold  = lipgloss.NewStyle().Bold(true)
+	green = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
+	// red is for errors only; prod gets its own colour so it doesn't read
+	// as one.
 	red    = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+	prod   = lipgloss.NewStyle().Foreground(lipgloss.Color("5"))
 	yellow = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 	cursor = lipgloss.NewStyle().Background(lipgloss.Color("237")).Bold(true)
 )
@@ -330,9 +333,9 @@ func (m Model) token(p awsconf.Profile) (glyph, badge string, st lipgloss.Style)
 	t := m.expiry[p.SessionKey]
 	switch left := time.Until(t); {
 	case t.IsZero():
-		return "✗", "sso ✗ no token", red
+		return "✗", "sso ✗ no token", dim
 	case left <= time.Minute:
-		return "✗", "sso ✗ expired", red
+		return "✗", "sso ✗ expired", dim
 	case left < 30*time.Minute:
 		return "✓", "sso ✓ " + fmtDur(left), yellow
 	default:
@@ -433,7 +436,7 @@ func (m Model) headerLeft() string {
 	case !m.known(m.current):
 		cur = yellow.Render(m.current) + dim.Render(" (not in config)")
 	case IsProd(m.current):
-		cur = red.Render(m.current)
+		cur = prod.Render(m.current)
 	default:
 		cur = green.Render(m.current)
 	}
@@ -441,7 +444,7 @@ func (m Model) headerLeft() string {
 }
 
 // row draws one profile, clipped to w. The selected row keeps its colours
-// (prod red, current green) on the cursor background, so the prod warning is
+// (prod, current green) on the cursor background, so the prod warning is
 // still showing when Enter is pressed.
 func (m Model) row(p awsconf.Profile, sel bool, l layout, w int) string {
 	st := func(s lipgloss.Style) lipgloss.Style {
@@ -457,7 +460,7 @@ func (m Model) row(p awsconf.Profile, sel bool, l layout, w int) string {
 	glyph, _, tokSt := m.token(p)
 	nameSt := plain
 	if IsProd(p.Name) {
-		nameSt = red
+		nameSt = prod
 	}
 	line := st(green).Render(mark) + st(tokSt).Render(glyph+" ") + st(nameSt).Render(pad(trunc(p.Name, l.name), l.name))
 	for _, c := range []struct {
