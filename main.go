@@ -18,6 +18,9 @@ import (
 	"github.com/sdgluck/awo/internal/ui"
 )
 
+// version is set at build time with -ldflags "-X main.version=...".
+var version = "dev"
+
 const usage = `usage: awo [command]
 
   (none)                      pick a profile for the current window
@@ -28,6 +31,7 @@ const usage = `usage: awo [command]
   current [--window @N]       print the window's profile
   list                        print configured SSO profiles
   init zsh                    print the shell hook
+  version                     print the version
 `
 
 func main() {
@@ -116,6 +120,10 @@ func run(args []string) error {
 			return errors.New("init: only zsh is supported")
 		}
 		fmt.Print(zshHook)
+		return nil
+
+	case "version", "--version":
+		fmt.Println(version)
 		return nil
 
 	case "-h", "--help", "help":
