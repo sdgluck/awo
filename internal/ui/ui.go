@@ -2,7 +2,10 @@
 package ui
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"sort"
 	"strings"
@@ -112,8 +115,38 @@ type loginDone struct {
 }
 
 func (m Model) login(p awsconf.Profile, thenUse bool) tea.Cmd {
-	c := exec.Command("aws", "sso", "login", "--profile", p.Name)
-	return tea.ExecProcess(c, func(err error) tea.Msg { return loginDone{p.Name, err, thenUse} })
+	c := &loginCmd{Cmd: exec.Command("aws", "sso", "login", "--profile", p.Name)}
+	return tea.Exec(c, func(err error) tea.Msg {
+		if err != nil {
+			if line := c.lastErr(); line != "" {
+				err = errors.New(line)
+			}
+		}
+		return loginDone{p.Name, err, thenUse}
+	})
+}
+
+// loginCmd announces itself before aws starts, so the gap before aws prints
+// anything (a cold start can take seconds) doesn't look like a hang, and
+// keeps aws's stderr so a failure can be shown in the picker.
+type loginCmd struct {
+	*exec.Cmd
+	stderr bytes.Buffer
+}
+
+func (c *loginCmd) Run() error {
+	fmt.Fprintf(c.Stdout, "%s\r\n", strings.Join(c.Args, " "))
+	return c.Cmd.Run()
+}
+
+func (c *loginCmd) SetStdin(r io.Reader)  { c.Stdin = r }
+func (c *loginCmd) SetStdout(w io.Writer) { c.Stdout = w }
+func (c *loginCmd) SetStderr(w io.Writer) { c.Stderr = io.MultiWriter(w, &c.stderr) }
+
+// lastErr is the last non-blank line aws wrote to stderr.
+func (c *loginCmd) lastErr() string {
+	lines := strings.Split(strings.TrimSpace(c.stderr.String()), "\n")
+	return strings.TrimSpace(lines[len(lines)-1])
 }
 
 func (m Model) selected() (awsconf.Profile, bool) {
